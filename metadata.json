@@ -1,0 +1,6 @@
+{
+  "name": "RIFORA — Moroccan Pottery & Decor",
+  "description": "Refined handcrafted Moroccan pottery, Tamegroute ceramics, and traditional home decor for European interiors. Direct artisan inquiries and customer validation pilot.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
