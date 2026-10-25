@@ -29,8 +29,8 @@ export const AboutView: React.FC<AboutViewProps> = ({ lang }) => {
       {/* Hero Visual Banner */}
       <div className="aspect-16/9 w-full bg-[#EFE8DC] rounded-xs overflow-hidden border border-[#DDD2C1] shadow-sm">
         <img
-          src="/src/assets/images/craft_potter_hands_1792840957701.jpg"
-          alt="Master Moroccan Potter in Atelier"
+          src="/assets/aistudio/20261025_111421_728c64cc.jpg"
+          alt="Terracotta Pottery Drying in Artisan Workshop"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover"
         />

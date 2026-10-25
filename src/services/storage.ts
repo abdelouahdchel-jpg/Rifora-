@@ -1,7 +1,7 @@
 import { Product, Inquiry, OwnerSettings, StorePolicies } from '../types';
 import { INITIAL_PRODUCTS } from '../data/initialProducts';
 
-const PRODUCTS_STORAGE_KEY = 'rifora_products_v1';
+const PRODUCTS_STORAGE_KEY = 'rifora_products_v2';
 const INQUIRIES_STORAGE_KEY = 'rifora_inquiries_v1';
 const SETTINGS_STORAGE_KEY = 'rifora_settings_v1';
 const POLICIES_STORAGE_KEY = 'rifora_policies_v1';
@@ -9,7 +9,7 @@ const POLICIES_STORAGE_KEY = 'rifora_policies_v1';
 const DEFAULT_SETTINGS: OwnerSettings = {
   whatsappNumber: '+212638194995', // Official owner WhatsApp number (International format)
   contactEmail: 'abdelouahdchel@gmail.com',
-  storeCurrency: 'EUR'
+  storeCurrency: 'MAD'
 };
 
 export const DEFAULT_POLICIES: StorePolicies = {

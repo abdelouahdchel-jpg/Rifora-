@@ -38,8 +38,16 @@ export const ShopView: React.FC<ShopViewProps> = ({
         return matchesCategory && matchesSearch;
       })
       .sort((a, b) => {
-        if (sortBy === 'priceAsc') return a.priceEUR - b.priceEUR;
-        if (sortBy === 'priceDesc') return b.priceEUR - a.priceEUR;
+        if (sortBy === 'priceAsc') {
+          const pA = a.priceMAD != null && a.priceMAD > 0 ? a.priceMAD : Infinity;
+          const pB = b.priceMAD != null && b.priceMAD > 0 ? b.priceMAD : Infinity;
+          return pA - pB;
+        }
+        if (sortBy === 'priceDesc') {
+          const pA = a.priceMAD != null && a.priceMAD > 0 ? a.priceMAD : -1;
+          const pB = b.priceMAD != null && b.priceMAD > 0 ? b.priceMAD : -1;
+          return pB - pA;
+        }
         if (sortBy === 'weightAsc') {
           const wA = parseFloat(a.weight) || 0;
           const wB = parseFloat(b.weight) || 0;

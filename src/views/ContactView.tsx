@@ -264,7 +264,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ products, lang }) => {
                   </option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name[lang]} (~€{p.priceEUR})
+                      {p.name[lang]} {p.priceMAD != null && p.priceMAD > 0 ? `(${p.priceMAD} MAD)` : `(${lang === 'en' ? 'Price to be added' : 'Prix à renseigner'})`}
                     </option>
                   ))}
                 </select>

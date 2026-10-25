@@ -26,10 +26,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const categoryName = translations[lang].categories[product.category];
 
   const handleWhatsApp = () => {
+    const priceInfo = product.priceMAD != null && product.priceMAD > 0
+      ? `${product.priceMAD} MAD`
+      : (lang === 'en' ? 'Price to be confirmed' : 'Prix à confirmer');
     const message = translations[lang].whatsApp.productMessage
       .replace('{productName}', product.name[lang])
       .replace('{productId}', product.id)
-      .replace('{priceEUR}', product.priceEUR.toString())
+      .replace('{priceInfo}', priceInfo)
+      .replace('~€{priceEUR}', priceInfo)
+      .replace('{priceEUR}', product.priceEUR ? product.priceEUR.toString() : '')
       .replace('{country}', lang === 'en' ? 'Europe' : 'l’Europe');
     const url = generateWhatsAppLink(settings.whatsappNumber, message);
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -74,7 +79,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="absolute bottom-4 left-4 bg-[#FBF8F3]/95 text-[#3E3833] text-xs px-3 py-1 border border-[#DDD2C1]">
               <span className="font-medium">{categoryName}</span>
               <span className="mx-1.5 text-[#C06548]">·</span>
-              <span>{product.isSampleData ? (lang === 'en' ? 'Workshop Sample Specimen' : 'Modèle Échantillon Atelier') : 'Moroccan Ceramic'}</span>
+              <span>{product.isSampleData ? (lang === 'en' ? 'Workshop Specimen' : 'Spécimen d’Atelier') : 'Moroccan Ceramic'}</span>
             </div>
           </div>
 
@@ -89,7 +94,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.isSampleData && (
                   <>
                     <span aria-hidden="true">·</span>
-                    <span className="text-[#C06548] font-semibold">{lang === 'en' ? 'Pilot Prototype' : 'Prototype Pilote'}</span>
+                    <span className="text-[#C06548] font-semibold">{lang === 'en' ? 'Workshop Specimen' : 'Spécimen Atelier'}</span>
                   </>
                 )}
               </div>
@@ -99,19 +104,43 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.name[lang]}
               </h2>
 
-              {/* EUR Reference Price */}
+              {/* MAD Selling Price & Shipping Separation Block */}
               <div className="mb-6 pb-4 border-b border-[#E8DFD3]">
-                <div className="flex items-baseline gap-3">
-                  <span className="font-mono text-3xl font-semibold text-[#282421] tabular-nums">
-                    €{product.priceEUR}
-                  </span>
-                  <span className="text-xs uppercase tracking-wider text-[#7A7067]">
-                    {lang === 'en' ? 'Indicative Reference Price' : 'Prix indicatif de référence'}
-                  </span>
-                </div>
-                <p className="text-xs text-[#7A7067] mt-1.5 leading-relaxed">
-                  {t.referencePriceNote}
-                </p>
+                {product.priceMAD != null && product.priceMAD > 0 ? (
+                  <div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-mono text-3xl font-semibold text-[#282421] tabular-nums">
+                        {product.priceMAD} MAD
+                      </span>
+                      <span className="text-xs uppercase tracking-wider text-[#7A7067]">
+                        {lang === 'en' ? 'Moroccan Dirham (MAD)' : 'Dirhams Marocains (MAD)'}
+                      </span>
+                    </div>
+                    {product.shippingCostMAD != null && product.shippingCostMAD > 0 ? (
+                      <p className="text-xs font-mono text-[#5C534B] mt-1.5">
+                        + {product.shippingCostMAD} MAD {lang === 'en' ? 'shipping (calculated separately)' : 'livraison (calculée séparément)'}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[#7A7067] mt-1.5 leading-relaxed">
+                        {t.shippingSeparateNote || (lang === 'en' ? 'Shipping is calculated separately per destination address.' : 'Frais de transport calculés séparément selon destination.')}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-2xl font-medium text-[#C06548] italic font-serif">
+                        {t.priceToBeAdded}
+                      </span>
+                      <span className="text-xs uppercase tracking-wider text-[#7A7067]">
+                        {lang === 'en' ? 'Selling Price Pending' : 'Prix en attente'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#7A7067] mt-2 leading-relaxed">
+                      {t.pricePendingNotice}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Product Specifications Grid */}

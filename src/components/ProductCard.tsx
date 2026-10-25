@@ -113,9 +113,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <span className="block text-[10px] uppercase tracking-wider text-[#8A7D71]">
               {t.price}
             </span>
-            <div className="font-mono text-lg font-semibold tabular-nums text-[#282421]">
-              €{product.priceEUR}
-            </div>
+            {product.priceMAD != null && product.priceMAD > 0 ? (
+              <div className="flex flex-col">
+                <span className="font-mono text-lg font-semibold tabular-nums text-[#282421]">
+                  {product.priceMAD} {t.currency}
+                </span>
+                {product.shippingCostMAD != null && product.shippingCostMAD > 0 && (
+                  <span className="text-[10px] text-[#7A7067] font-mono">
+                    +{product.shippingCostMAD} {t.currency} shipping
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="inline-block text-xs font-medium text-[#C06548] italic py-0.5">
+                {t.priceToBeAdded}
+              </span>
+            )}
           </div>
 
           <button

@@ -9,9 +9,12 @@ export interface Product {
     fr: string;
   };
   category: 'pottery' | 'vases' | 'bowls' | 'lanterns' | 'decor';
-  priceEUR: number;
-  dimensions: string; // e.g. "H 32 × Ø 22 cm"
-  weight: string;     // e.g. "2.4 kg"
+  priceMAD?: number | null; // Customer-facing selling price in MAD (null when not yet set)
+  purchaseCostMAD?: number | null; // PRIVATE owner supplier cost in MAD (hidden from customer storefront)
+  shippingCostMAD?: number | null; // Separate shipping fee in MAD (never bundled or invented)
+  priceEUR?: number | null; // Optional legacy field
+  dimensions: string; // e.g. "To be measured" / "À mesurer"
+  weight: string;     // e.g. "To be measured" / "À mesurer"
   material: {
     en: string;
     fr: string;
@@ -21,7 +24,8 @@ export interface Product {
     fr: string;
   };
   artisanPlaceholder: boolean; // True until real artisan profile is officially verified
-  isSampleData: boolean;       // Clearly flags demo/prototype items
+  isSampleData: boolean;       // Clearly flags prototype items
+  needsReview?: boolean;       // Marked for owner review
   description: {
     en: string;
     fr: string;
@@ -51,7 +55,8 @@ export interface Inquiry {
 export interface OwnerSettings {
   whatsappNumber: string;
   contactEmail: string;
-  storeCurrency: string;
+  storeCurrency: string; // Defaults to 'MAD'
+  defaultShippingCostMAD?: number | null;
 }
 
 export interface StorePolicies {

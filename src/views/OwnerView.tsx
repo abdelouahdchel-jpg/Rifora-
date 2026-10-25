@@ -65,18 +65,26 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
 
+  // Quick Price Modal State (Optimized for quick phone entry)
+  const [quickPriceProduct, setQuickPriceProduct] = useState<Product | null>(null);
+  const [quickPriceMAD, setQuickPriceMAD] = useState<string>('');
+  const [quickCostMAD, setQuickCostMAD] = useState<string>('');
+  const [quickShippingMAD, setQuickShippingMAD] = useState<string>('');
+
   // Form Fields for Products
   const [formNameEn, setFormNameEn] = useState('');
   const [formNameFr, setFormNameFr] = useState('');
   const [formCategory, setFormCategory] = useState<'pottery' | 'vases' | 'bowls' | 'lanterns' | 'decor'>('pottery');
-  const [formPriceEUR, setFormPriceEUR] = useState<number>(65);
-  const [formDimensions, setFormDimensions] = useState('H 30 cm × Ø 20 cm');
-  const [formWeight, setFormWeight] = useState('2.0 kg');
+  const [formPriceMAD, setFormPriceMAD] = useState<string>('');
+  const [formPurchaseCostMAD, setFormPurchaseCostMAD] = useState<string>('');
+  const [formShippingCostMAD, setFormShippingCostMAD] = useState<string>('');
+  const [formDimensions, setFormDimensions] = useState('To be measured');
+  const [formWeight, setFormWeight] = useState('To be measured');
   const [formMaterialEn, setFormMaterialEn] = useState('Natural Moroccan clay');
   const [formMaterialFr, setFormMaterialFr] = useState('Argile marocaine naturelle');
   const [formAvailabilityEn, setFormAvailabilityEn] = useState('Available on Request');
   const [formAvailabilityFr, setFormAvailabilityFr] = useState('Disponible sur demande');
-  const [formIsSampleData, setFormIsSampleData] = useState(false);
+  const [formIsSampleData, setFormIsSampleData] = useState(true);
   const [formImageUrl, setFormImageUrl] = useState('');
   const [formDescEn, setFormDescEn] = useState('');
   const [formDescFr, setFormDescFr] = useState('');
@@ -119,9 +127,11 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
     setFormNameEn(prod.name.en);
     setFormNameFr(prod.name.fr);
     setFormCategory(prod.category);
-    setFormPriceEUR(prod.priceEUR);
-    setFormDimensions(prod.dimensions);
-    setFormWeight(prod.weight);
+    setFormPriceMAD(prod.priceMAD != null && prod.priceMAD > 0 ? prod.priceMAD.toString() : '');
+    setFormPurchaseCostMAD(prod.purchaseCostMAD != null && prod.purchaseCostMAD > 0 ? prod.purchaseCostMAD.toString() : '');
+    setFormShippingCostMAD(prod.shippingCostMAD != null && prod.shippingCostMAD > 0 ? prod.shippingCostMAD.toString() : '');
+    setFormDimensions(prod.dimensions || 'To be measured');
+    setFormWeight(prod.weight || 'To be measured');
     setFormMaterialEn(prod.material.en);
     setFormMaterialFr(prod.material.fr);
     setFormAvailabilityEn(prod.availability.en);
@@ -139,17 +149,52 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
     setFormNameEn('');
     setFormNameFr('');
     setFormCategory('pottery');
-    setFormPriceEUR(75);
-    setFormDimensions('H 32 cm × Ø 20 cm');
-    setFormWeight('1.8 kg');
+    setFormPriceMAD('');
+    setFormPurchaseCostMAD('');
+    setFormShippingCostMAD('');
+    setFormDimensions('To be measured');
+    setFormWeight('To be measured');
     setFormMaterialEn('Natural Moroccan earthenware');
     setFormMaterialFr('Terre cuite naturelle du Maroc');
     setFormAvailabilityEn('Available on Request');
     setFormAvailabilityFr('Disponible sur demande');
-    setFormIsSampleData(false);
-    setFormImageUrl('/src/assets/images/hero_moroccan_pottery_1792840896413.jpg');
+    setFormIsSampleData(true);
+    setFormImageUrl('/assets/aistudio/20261025_111600_f22b7ef1.jpg');
     setFormDescEn('');
     setFormDescFr('');
+  };
+
+  const openQuickPriceModal = (prod: Product) => {
+    setQuickPriceProduct(prod);
+    setQuickPriceMAD(prod.priceMAD != null && prod.priceMAD > 0 ? prod.priceMAD.toString() : '');
+    setQuickCostMAD(prod.purchaseCostMAD != null && prod.purchaseCostMAD > 0 ? prod.purchaseCostMAD.toString() : '');
+    setQuickShippingMAD(prod.shippingCostMAD != null && prod.shippingCostMAD > 0 ? prod.shippingCostMAD.toString() : '');
+  };
+
+  const handleSaveQuickPrice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickPriceProduct) return;
+
+    const parsedPrice = quickPriceMAD.trim() !== '' ? Math.max(1, Math.round(Number(quickPriceMAD))) : null;
+    const parsedCost = quickCostMAD.trim() !== '' ? Math.max(0, Math.round(Number(quickCostMAD))) : null;
+    const parsedShipping = quickShippingMAD.trim() !== '' ? Math.max(0, Math.round(Number(quickShippingMAD))) : null;
+
+    const updatedProduct: Product = {
+      ...quickPriceProduct,
+      priceMAD: parsedPrice,
+      purchaseCostMAD: parsedCost,
+      shippingCostMAD: parsedShipping
+    };
+
+    const result = saveProductToStorage(updatedProduct);
+    if (result.success) {
+      onProductsUpdated(result.products);
+      setQuickPriceProduct(null);
+      setFeedbackNotice(lang === 'en' ? 'Product prices updated successfully!' : 'Prix mis à jour avec succès !');
+      setTimeout(() => setFeedbackNotice(''), 3000);
+    } else {
+      setErrorMessage(result.error || 'Failed to save price.');
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,6 +229,10 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
     }
 
     const productId = editingProduct ? editingProduct.id : `rifora-${Date.now().toString(36)}`;
+    const parsedPriceMAD = formPriceMAD.trim() !== '' ? Math.max(1, Math.round(Number(formPriceMAD))) : null;
+    const parsedPurchaseCostMAD = formPurchaseCostMAD.trim() !== '' ? Math.max(0, Math.round(Number(formPurchaseCostMAD))) : null;
+    const parsedShippingCostMAD = formShippingCostMAD.trim() !== '' ? Math.max(0, Math.round(Number(formShippingCostMAD))) : null;
+
     const productToSave: Product = {
       id: productId,
       name: {
@@ -191,9 +240,12 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
         fr: sanitizedNameFr || sanitizedNameEn
       },
       category: formCategory,
-      priceEUR: Math.max(1, Math.round(Number(formPriceEUR) || 60)),
-      dimensions: sanitizeString(formDimensions, 50),
-      weight: sanitizeString(formWeight, 30),
+      priceMAD: parsedPriceMAD,
+      purchaseCostMAD: parsedPurchaseCostMAD,
+      shippingCostMAD: parsedShippingCostMAD,
+      priceEUR: null,
+      dimensions: sanitizeString(formDimensions, 50) || 'To be measured',
+      weight: sanitizeString(formWeight, 30) || 'To be measured',
       material: {
         en: sanitizeString(formMaterialEn, 150),
         fr: sanitizeString(formMaterialFr, 150)
@@ -204,6 +256,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
       },
       artisanPlaceholder: formIsSampleData,
       isSampleData: formIsSampleData,
+      needsReview: parsedPriceMAD === null,
       description: {
         en: sanitizeString(formDescEn, 800),
         fr: sanitizeString(formDescFr, 800)
@@ -212,7 +265,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
         en: ['Handcrafted according to ancestral traditions', 'Measured and inspected before packing'],
         fr: ['Façonné selon les traditions ancestrales', 'Vérifié et inspecté avant emballage']
       },
-      imageUrl: formImageUrl.trim() || '/src/assets/images/hero_moroccan_pottery_1792840896413.jpg',
+      imageUrl: formImageUrl.trim() || '/assets/aistudio/20261025_111600_f22b7ef1.jpg',
       featured: editingProduct ? editingProduct.featured : false
     };
 
@@ -508,7 +561,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
                   </div>
                 </div>
 
-                {/* Category & EUR Price */}
+                {/* Category & MAD Pricing Fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-medium text-[#443E38] mb-1">
@@ -528,16 +581,55 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
                   </div>
                   <div>
                     <label className="block font-medium text-[#443E38] mb-1">
-                      {t.form.priceEUR} *
+                      {t.form.priceMAD}
                     </label>
                     <input
                       type="number"
-                      required
-                      min="1"
-                      value={formPriceEUR}
-                      onChange={(e) => setFormPriceEUR(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      value={formPriceMAD}
+                      onChange={(e) => setFormPriceMAD(e.target.value)}
+                      placeholder={lang === 'en' ? 'Leave empty for "Price to be added"' : 'Laisser vide pour "Prix à renseigner"'}
                       className="w-full p-2.5 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-xs font-mono tabular-nums text-[#282421]"
                     />
+                    <span className="block text-[10px] text-[#7A7067] mt-0.5">
+                      {lang === 'en' ? 'Default store currency is MAD (Moroccan dirham).' : 'Devise par défaut de la boutique : MAD.'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Private Cost & Separate Shipping */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-[#FBF8F3] border border-[#E8DFD3] rounded-xs">
+                  <div>
+                    <label className="block font-medium text-[#38332E] mb-1">
+                      {t.form.purchaseCostMAD}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formPurchaseCostMAD}
+                      onChange={(e) => setFormPurchaseCostMAD(e.target.value)}
+                      placeholder={lang === 'en' ? 'e.g. 50 (Private workshop cost)' : 'ex. 50 (Prix d’achat atelier)'}
+                      className="w-full p-2.5 bg-white border border-[#DDD2C1] rounded-xs text-xs font-mono tabular-nums text-[#282421]"
+                    />
+                    <span className="block text-[10px] text-[#8C8074] mt-0.5">
+                      {lang === 'en' ? 'Confidential: Hidden from customer storefront' : 'Confidentiel : Masqué aux visiteurs'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block font-medium text-[#38332E] mb-1">
+                      {t.form.shippingCostMAD}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formShippingCostMAD}
+                      onChange={(e) => setFormShippingCostMAD(e.target.value)}
+                      placeholder={lang === 'en' ? 'Leave empty if calculated per destination' : 'Laisser vide si devis par destination'}
+                      className="w-full p-2.5 bg-white border border-[#DDD2C1] rounded-xs text-xs font-mono tabular-nums text-[#282421]"
+                    />
+                    <span className="block text-[10px] text-[#8C8074] mt-0.5">
+                      {lang === 'en' ? 'Kept separate from product price (never bundled)' : 'Distinct du prix de l’article'}
+                    </span>
                   </div>
                 </div>
 
@@ -545,25 +637,25 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-medium text-[#443E38] mb-1">
-                      {t.form.dimensions} *
+                      {t.form.dimensions}
                     </label>
                     <input
                       type="text"
-                      required
                       value={formDimensions}
                       onChange={(e) => setFormDimensions(e.target.value)}
+                      placeholder="To be measured"
                       className="w-full p-2.5 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-xs text-[#282421]"
                     />
                   </div>
                   <div>
                     <label className="block font-medium text-[#443E38] mb-1">
-                      {t.form.weight} *
+                      {t.form.weight}
                     </label>
                     <input
                       type="text"
-                      required
                       value={formWeight}
                       onChange={(e) => setFormWeight(e.target.value)}
+                      placeholder="To be measured"
                       className="w-full p-2.5 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-xs text-[#282421]"
                     />
                   </div>
@@ -729,16 +821,106 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
             </div>
           )}
 
-          {/* Product Items Table */}
-          <div className="bg-white border border-[#E8DFD3] rounded-xs overflow-x-auto shadow-xs">
+          {/* Mobile Phone Quick Editing & Price Management Reminder */}
+          <div className="p-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xs text-xs text-[#92400E] flex items-start gap-2">
+            <Sliders className="w-4 h-4 text-[#B45309] shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold block">
+                {lang === 'en' ? 'Mobile Price Management (MAD)' : 'Gestion des prix sur mobile (MAD)'}
+              </span>
+              <p className="text-[11px] text-[#B45309] mt-0.5 leading-relaxed">
+                {lang === 'en'
+                  ? 'All 10 Moroccan products start with empty prices ("Price to be added"). Tap the "Edit Price (MAD)" button on any product below to enter or update the selling price, confidential supplier cost, or shipping fee directly from your phone.'
+                  : 'Les 10 produits débutent sans prix (« Prix à renseigner »). Cliquez sur « Modifier Prix (MAD) » sur n’importe quel article ci-dessous pour renseigner le prix de vente, coût fournisseur ou frais d’envoi depuis votre mobile.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Mobile Card Layout (< 768px screens) for effortless touch editing */}
+          <div className="md:hidden space-y-4">
+            {products.map((p) => (
+              <div key={p.id} className="bg-white border border-[#E8DFD3] rounded-xs p-4 shadow-xs space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 bg-[#F4EFE6] rounded-xs overflow-hidden border border-[#DDD2C1] shrink-0">
+                    <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-serif text-sm font-medium text-[#282421] block truncate">
+                      {p.name[lang]}
+                    </span>
+                    <span className="text-[10px] text-[#7A7067] font-mono block">
+                      Ref: {p.id} · {p.category}
+                    </span>
+                    <div className="mt-1">
+                      {p.priceMAD != null && p.priceMAD > 0 ? (
+                        <span className="font-mono text-sm font-bold text-[#282421]">
+                          {p.priceMAD} MAD
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium text-[#C06548] italic bg-[#FDF2F0] px-2 py-0.5 border border-[#F8D7DA] rounded-xs inline-block">
+                          {t.productMgmt.sampleBadge ? 'Price to be added' : 'Prix à renseigner'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Private Cost and Shipping summary */}
+                <div className="grid grid-cols-2 gap-2 text-[11px] bg-[#FBF8F3] p-2.5 rounded-xs border border-[#F0E8DC]">
+                  <div>
+                    <span className="text-[#8C8074] block text-[10px] uppercase">Cost (Private):</span>
+                    <span className="font-mono font-medium text-[#38332E]">
+                      {p.purchaseCostMAD != null && p.purchaseCostMAD > 0 ? `${p.purchaseCostMAD} MAD` : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[#8C8074] block text-[10px] uppercase">Shipping:</span>
+                    <span className="font-mono font-medium text-[#38332E]">
+                      {p.shippingCostMAD != null && p.shippingCostMAD > 0 ? `${p.shippingCostMAD} MAD` : 'Per quote'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mobile Touch Action Buttons (High tap targets >= 44px) */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => openQuickPriceModal(p)}
+                    className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-[#C06548] hover:bg-[#9E4A31] rounded-xs cursor-pointer shadow-xs"
+                  >
+                    <Sliders className="w-4 h-4" />
+                    <span>{lang === 'en' ? 'Edit Price (MAD)' : 'Modifier Prix (MAD)'}</span>
+                  </button>
+                  <button
+                    onClick={() => startEditProduct(p)}
+                    className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-[#5C534B] hover:text-[#282421] border border-[#DDD2C1] bg-white rounded-xs"
+                    title="Full Edit"
+                    aria-label="Full Edit"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(p.id)}
+                    className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center p-2 text-[#9B1C1C] hover:bg-[#FDF2F2] border border-[#DDD2C1] bg-white rounded-xs"
+                    title="Delete"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View (>= 768px screens) */}
+          <div className="hidden md:block bg-white border border-[#E8DFD3] rounded-xs overflow-x-auto shadow-xs">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#F7F2EA] border-b border-[#E8DFD3] text-[#5C534B] uppercase tracking-wider font-semibold text-[10px]">
                 <tr>
                   <th className="p-3">Photo</th>
                   <th className="p-3">Product Name</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Price (EUR)</th>
-                  <th className="p-3">Dimensions & Weight</th>
+                  <th className="p-3">Selling Price (MAD)</th>
+                  <th className="p-3">Workshop Cost (Private)</th>
+                  <th className="p-3">Shipping (Separate)</th>
                   <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -752,32 +934,42 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
                     </td>
                     <td className="p-3 font-medium text-[#282421]">
                       <span>{p.name[lang]}</span>
-                      <span className="block text-[10px] text-[#7A7067] font-mono">Ref: {p.id}</span>
+                      <span className="block text-[10px] text-[#7A7067] font-mono">Ref: {p.id} · {p.category}</span>
                     </td>
                     <td className="p-3">
-                      {p.isSampleData ? (
-                        <span className="text-[10px] text-[#A3523B] bg-[#FDF2F0] px-2 py-0.5 border border-[#F8D7DA] rounded-xs uppercase font-medium">
-                          Prototype Sample
+                      {p.priceMAD != null && p.priceMAD > 0 ? (
+                        <span className="font-mono font-semibold text-sm text-[#282421]">
+                          {p.priceMAD} MAD
                         </span>
                       ) : (
-                        <span className="text-[10px] text-[#155724] bg-[#EBF7EE] px-2 py-0.5 border border-[#C3E6CB] rounded-xs uppercase font-medium">
-                          Verified Item
+                        <span className="text-[10px] text-[#A3523B] bg-[#FDF2F0] px-2 py-0.5 border border-[#F8D7DA] rounded-xs uppercase font-medium italic">
+                          Price to be added
                         </span>
                       )}
                     </td>
-                    <td className="p-3 font-mono font-semibold tabular-nums text-[#282421]">
-                      €{p.priceEUR}
+                    <td className="p-3 font-mono tabular-nums text-[#38332E]">
+                      {p.purchaseCostMAD != null && p.purchaseCostMAD > 0 ? (
+                        <span>{p.purchaseCostMAD} MAD <span className="text-[10px] text-[#8C8074]">(Private)</span></span>
+                      ) : (
+                        <span className="text-[#8C8074]">—</span>
+                      )}
                     </td>
-                    <td className="p-3 text-[11px] text-[#6E6358]">
-                      <div>{p.dimensions}</div>
-                      <div className="text-[#8C8074]">{p.weight}</div>
+                    <td className="p-3 text-[11px] text-[#6E6358] font-mono">
+                      {p.shippingCostMAD != null && p.shippingCostMAD > 0 ? `${p.shippingCostMAD} MAD` : 'Per inquiry quote'}
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openQuickPriceModal(p)}
+                          className="px-2.5 py-1 text-[11px] font-medium text-[#C06548] border border-[#C06548] hover:bg-[#C06548] hover:text-white rounded-xs transition-colors cursor-pointer"
+                          title="Quick Price Editor"
+                        >
+                          Edit Price (MAD)
+                        </button>
                         <button
                           onClick={() => startEditProduct(p)}
                           className="p-1.5 text-[#5C534B] hover:text-[#C06548] border border-[#DDD2C1] hover:bg-white rounded-xs transition-colors cursor-pointer"
-                          title="Edit Product"
+                          title="Edit Full Details"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -1142,6 +1334,106 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Quick Price Modal for Phone & Desktop */}
+      {quickPriceProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-md bg-white border border-[#DDD2C1] rounded-xs p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E8DFD3]">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-[#C06548] font-semibold block">
+                  {lang === 'en' ? 'Quick Price Manager (MAD)' : 'Gestion Rapide des Prix (MAD)'}
+                </span>
+                <h3 className="font-serif text-lg text-[#282421]">
+                  {quickPriceProduct.name[lang]}
+                </h3>
+              </div>
+              <button
+                onClick={() => setQuickPriceProduct(null)}
+                className="text-[#7A7067] hover:text-[#282421] p-1"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuickPrice} className="space-y-4 text-xs">
+              {/* Selling Price */}
+              <div>
+                <label className="block font-medium text-[#282421] mb-1">
+                  {lang === 'en' ? 'Selling Price (MAD)' : 'Prix de vente (MAD)'}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  autoFocus
+                  value={quickPriceMAD}
+                  onChange={(e) => setQuickPriceMAD(e.target.value)}
+                  placeholder={lang === 'en' ? 'Leave empty for "Price to be added"' : 'Laisser vide pour "Prix à renseigner"'}
+                  className="w-full p-3 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-sm font-mono tabular-nums text-[#282421] focus:outline-none focus:border-[#C06548]"
+                />
+                <span className="block text-[11px] text-[#7A7067] mt-1">
+                  {lang === 'en'
+                    ? 'Customer-facing selling price. If empty, displays "Price to be added".'
+                    : 'Prix affiché en boutique. Si vide, affiche « Prix à renseigner ».'}
+                </span>
+              </div>
+
+              {/* Purchase Cost (Confidential) */}
+              <div className="p-3 bg-[#FBF8F3] border border-[#E8DFD3] rounded-xs">
+                <label className="block font-medium text-[#282421] mb-1">
+                  {lang === 'en' ? 'Purchase Cost (MAD) — PRIVATE' : 'Prix d’achat atelier (MAD) — PRIVÉ'}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={quickCostMAD}
+                  onChange={(e) => setQuickCostMAD(e.target.value)}
+                  placeholder={lang === 'en' ? 'e.g. 50 (Private workshop cost)' : 'ex. 50 (Coût d’achat atelier)'}
+                  className="w-full p-2.5 bg-white border border-[#DDD2C1] rounded-xs text-xs font-mono tabular-nums text-[#282421]"
+                />
+                <span className="block text-[10px] text-[#8C8074] mt-0.5">
+                  {lang === 'en' ? 'Confidential: Never exposed to visitors.' : 'Confidentiel : Jamais visible par les clients.'}
+                </span>
+              </div>
+
+              {/* Shipping Fee */}
+              <div>
+                <label className="block font-medium text-[#282421] mb-1">
+                  {lang === 'en' ? 'Shipping Cost (MAD) — Kept Separate' : 'Frais d’envoi (MAD) — Distincts'}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={quickShippingMAD}
+                  onChange={(e) => setQuickShippingMAD(e.target.value)}
+                  placeholder={lang === 'en' ? 'Leave empty if calculated per destination' : 'Laisser vide si devis par destination'}
+                  className="w-full p-2.5 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-xs font-mono tabular-nums text-[#282421]"
+                />
+                <span className="block text-[10px] text-[#7A7067] mt-0.5">
+                  {lang === 'en' ? 'Shipping fee remains separate from product price.' : 'Frais de port calculés séparément du prix de l’article.'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E8DFD3]">
+                <button
+                  type="button"
+                  onClick={() => setQuickPriceProduct(null)}
+                  className="px-4 py-2.5 text-xs text-[#5C534B] hover:text-[#282421] border border-[#DDD2C1] rounded-xs cursor-pointer"
+                >
+                  {t.form.cancel}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-[#C06548] hover:bg-[#9E4A31] rounded-xs cursor-pointer shadow-xs"
+                >
+                  {lang === 'en' ? 'Save Price' : 'Enregistrer le prix'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

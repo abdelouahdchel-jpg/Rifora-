@@ -109,9 +109,12 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
   };
 
   const handleWhatsAppSend = () => {
+    const priceText = currentProduct?.priceMAD != null && currentProduct.priceMAD > 0
+      ? `${currentProduct.priceMAD} MAD`
+      : (lang === 'en' ? 'Price to be confirmed' : 'Prix à confirmer');
     const text = lang === 'en'
-      ? `Hello RIFORA! My name is ${customerName}. I would like to inquire about reserving ${quantity}x "${productName}" (Ref: ${currentProduct?.id || 'general'}, ~€${currentProduct?.priceEUR || 0}) for delivery to ${finalCountry}. My email is ${email}.${phone ? ` Phone: ${phone}.` : ''}${notes ? ` Notes: ${notes}` : ''} Could you please confirm piece availability and shipping options? Thank you!`
-      : `Bonjour RIFORA ! Je m'appelle ${customerName}. Je souhaite me renseigner pour réserver ${quantity}x "${productName}" (Réf : ${currentProduct?.id || 'general'}, ~€${currentProduct?.priceEUR || 0}) pour une livraison en ${finalCountry}. Mon email est ${email}.${phone ? ` Téléphone : ${phone}.` : ''}${notes ? ` Précisions : ${notes}` : ''} Pourriez-vous me confirmer la disponibilité et les options de livraison ? Merci !`;
+      ? `Hello RIFORA! My name is ${customerName}. I would like to inquire about reserving ${quantity}x "${productName}" (Ref: ${currentProduct?.id || 'general'}, ${priceText}) for delivery to ${finalCountry}. My email is ${email}.${phone ? ` Phone: ${phone}.` : ''}${notes ? ` Notes: ${notes}` : ''} Could you please confirm piece availability and shipping options? Thank you!`
+      : `Bonjour RIFORA ! Je m'appelle ${customerName}. Je souhaite me renseigner pour réserver ${quantity}x "${productName}" (Réf : ${currentProduct?.id || 'general'}, ${priceText}) pour une livraison en ${finalCountry}. Mon email est ${email}.${phone ? ` Téléphone : ${phone}.` : ''}${notes ? ` Précisions : ${notes}` : ''} Pourriez-vous me confirmer la disponibilité et les options de livraison ? Merci !`;
     const url = generateWhatsAppLink(settings.whatsappNumber, text);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -301,7 +304,7 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
                         {product.name[lang]}
                       </span>
                       <span className="text-[11px] text-[#7A7067]">
-                        Ref: {product.id} · {product.dimensions} · ~€{product.priceEUR}
+                        Ref: {product.id} · {product.dimensions} · {product.priceMAD != null && product.priceMAD > 0 ? `${product.priceMAD} MAD` : (lang === 'en' ? 'Price to be added' : 'Prix à renseigner')}
                       </span>
                     </div>
                   </div>
@@ -316,7 +319,7 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
                     </option>
                     {allProducts.map(p => (
                       <option key={p.id} value={p.id}>
-                        {p.name[lang]} (~€{p.priceEUR})
+                        {p.name[lang]} {p.priceMAD != null && p.priceMAD > 0 ? `(${p.priceMAD} MAD)` : `(${lang === 'en' ? 'Price to be added' : 'Prix à renseigner'})`}
                       </option>
                     ))}
                   </select>

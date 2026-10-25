@@ -89,8 +89,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div className="relative aspect-16/10 sm:aspect-16/9 w-full bg-[#EFE8DC] rounded-xs overflow-hidden shadow-lg border border-[#DDD2C1]">
                 {!heroImageError ? (
                   <img
-                    src="/src/assets/images/hero_moroccan_pottery_1792840896413.jpg"
-                    alt="Handcrafted Moroccan Pottery on Travertine"
+                    src="/assets/aistudio/20261025_111600_f22b7ef1.jpg"
+                    alt="Handcrafted Moroccan Pottery in Workshop"
                     referrerPolicy="no-referrer"
                     onError={() => setHeroImageError(true)}
                     className="w-full h-full object-cover"
