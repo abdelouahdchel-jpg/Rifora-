@@ -30,7 +30,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       .replace('{productName}', product.name[lang])
       .replace('{productId}', product.id)
       .replace('{priceEUR}', product.priceEUR.toString())
-      .replace('{country}', 'Europe');
+      .replace('{country}', lang === 'en' ? 'Europe' : 'l’Europe');
     const url = generateWhatsAppLink(settings.whatsappNumber, message);
     window.open(url, '_blank', 'noopener,noreferrer');
   };

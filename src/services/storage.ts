@@ -7,8 +7,8 @@ const SETTINGS_STORAGE_KEY = 'rifora_settings_v1';
 const POLICIES_STORAGE_KEY = 'rifora_policies_v1';
 
 const DEFAULT_SETTINGS: OwnerSettings = {
-  whatsappNumber: '+212600000000', // Owner default WhatsApp number (International format)
-  contactEmail: 'contact@rifora-pottery.com',
+  whatsappNumber: '+212638194995', // Official owner WhatsApp number (International format)
+  contactEmail: 'abdelouahdchel@gmail.com',
   storeCurrency: 'EUR'
 };
 
@@ -296,7 +296,15 @@ export const getStoredOwnerSettings = (): OwnerSettings => {
   try {
     const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const parsed = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    // Automatically migrate placeholder phone or emails to confirmed official details
+    if (!parsed.whatsappNumber || parsed.whatsappNumber === '+212600000000' || parsed.whatsappNumber.includes('600000000')) {
+      parsed.whatsappNumber = DEFAULT_SETTINGS.whatsappNumber;
+    }
+    if (!parsed.contactEmail || parsed.contactEmail.includes('rifora-pottery.com')) {
+      parsed.contactEmail = DEFAULT_SETTINGS.contactEmail;
+    }
+    return parsed;
   } catch {
     return DEFAULT_SETTINGS;
   }

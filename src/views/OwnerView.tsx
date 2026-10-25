@@ -1108,7 +1108,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
               <input
                 type="text"
                 required
-                placeholder="+212600000000"
+                placeholder="+212638194995"
                 value={settings.whatsappNumber}
                 onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
                 className="w-full p-2.5 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-xs font-mono text-[#282421]"
@@ -1125,6 +1125,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
               <input
                 type="email"
                 required
+                placeholder="abdelouahdchel@gmail.com"
                 value={settings.contactEmail}
                 onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
                 className="w-full p-2.5 bg-[#FBF8F3] border border-[#DDD2C1] rounded-xs text-xs text-[#282421]"

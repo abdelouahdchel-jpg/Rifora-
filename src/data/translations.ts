@@ -112,8 +112,8 @@ export const translations = {
     whatsApp: {
       floatingLabel: 'Chat with RIFORA on WhatsApp',
       quickChat: 'Have a question? Chat with us directly on WhatsApp',
-      defaultMessage: 'Hello RIFORA! I am browsing your Moroccan pottery store and would like to inquire about your collection.',
-      productMessage: 'Hello RIFORA! I am interested in inquiring about "{productName}" (Ref: {productId}, {priceEUR} €) for delivery to {country}.'
+      defaultMessage: 'Hello RIFORA! I am browsing your Moroccan pottery and home decor collection and would like to inquire about piece availability and shipping options to Europe. Thank you!',
+      productMessage: 'Hello RIFORA! I would like to inquire about reserving "{productName}" (Ref: {productId}, ~€{priceEUR}) for delivery to {country}. Could you please confirm piece availability and shipping options? Thank you!'
     },
     about: {
       title: 'The Soul of Moroccan Earth',
@@ -166,7 +166,7 @@ export const translations = {
       whatsAppDirect: 'Direct WhatsApp',
       whatsAppText: 'Fastest response for European inquiries. Speak directly with the RIFORA team.',
       emailDirect: 'Inquiry Email',
-      emailAddress: 'contact@rifora-pottery.com',
+      emailAddress: 'abdelouahdchel@gmail.com',
       responseTime: 'Typical response time: Under 4 hours on WhatsApp, under 24 hours via email.',
       moroccoBase: 'Atelier Connections: Safi, Fez & Tamegroute, Morocco',
       europeBase: 'Distribution Pilot: Serving European Union & UK'
@@ -354,8 +354,8 @@ export const translations = {
     whatsApp: {
       floatingLabel: 'Échanger avec RIFORA sur WhatsApp',
       quickChat: 'Une question ? Discutez directement avec nous sur WhatsApp',
-      defaultMessage: 'Bonjour RIFORA ! Je découvre votre sélection de poterie marocaine et souhaite me renseigner sur votre collection.',
-      productMessage: 'Bonjour RIFORA ! Je souhaite me renseigner sur la pièce "{productName}" (Réf: {productId}, {priceEUR} €) pour une livraison en {country}.'
+      defaultMessage: 'Bonjour RIFORA ! Je découvre votre sélection de poterie et décoration marocaine et souhaite me renseigner sur la disponibilité et les options de livraison vers l’Europe. Merci !',
+      productMessage: 'Bonjour RIFORA ! Je souhaite me renseigner sur la pièce "{productName}" (Réf : {productId}, ~€{priceEUR}) pour une livraison en {country}. Pourriez-vous me confirmer la disponibilité et les détails d’expédition ? Merci !'
     },
     about: {
       title: 'L’Âme de la Terre Marocaine',
@@ -408,7 +408,7 @@ export const translations = {
       whatsAppDirect: 'WhatsApp Direct',
       whatsAppText: 'Le moyen le plus direct pour échanger avec notre équipe.',
       emailDirect: 'Email de Contact',
-      emailAddress: 'contact@rifora-pottery.com',
+      emailAddress: 'abdelouahdchel@gmail.com',
       responseTime: 'Temps de réponse habituel : moins de 4 heures sur WhatsApp, sous 24 heures par email.',
       moroccoBase: 'Liaison Ateliers : Safi, Fès & Tamegroute, Maroc',
       europeBase: 'Pilote Distribution : Union Européenne & Royaume-Uni'

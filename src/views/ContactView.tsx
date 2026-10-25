@@ -87,10 +87,10 @@ export const ContactView: React.FC<ContactViewProps> = ({ products, lang }) => {
 
   const handleWhatsAppFromForm = () => {
     const selectedProd = products.find(p => p.id === selectedProductId);
-    const prodName = selectedProd ? selectedProd.name[lang] : (lang === 'en' ? 'General Collection Inquiry' : 'Demande générale');
+    const prodName = selectedProd ? selectedProd.name[lang] : (lang === 'en' ? 'General Collection Inquiry' : 'Demande générale sur la collection');
     const text = lang === 'en'
-      ? `Hello RIFORA! My name is ${customerName}. I am inquiring about ${quantity}x "${prodName}" for delivery to ${destinationCountry}. My email is ${email}. Notes: ${notes || 'None'}`
-      : `Bonjour RIFORA ! Je m'appelle ${customerName}. Je me renseigne sur ${quantity}x "${prodName}" pour une livraison en ${destinationCountry}. Mon email est ${email}. Précisions : ${notes || 'Aucune'}`;
+      ? `Hello RIFORA! My name is ${customerName}. I would like to inquire about reserving ${quantity}x "${prodName}" for delivery to ${destinationCountry}. My email is ${email}.${phone ? ` Phone: ${phone}.` : ''}${notes ? ` Notes: ${notes}` : ''} Thank you!`
+      : `Bonjour RIFORA ! Je m'appelle ${customerName}. Je souhaite me renseigner pour réserver ${quantity}x "${prodName}" pour une livraison en ${destinationCountry}. Mon email est ${email}.${phone ? ` Téléphone : ${phone}.` : ''}${notes ? ` Précisions : ${notes}` : ''} Merci !`;
     const url = generateWhatsAppLink(settings.whatsappNumber, text);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -228,10 +228,10 @@ export const ContactView: React.FC<ContactViewProps> = ({ products, lang }) => {
               <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={handleWhatsAppFromForm}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-semibold rounded-xs shadow-xs"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-semibold rounded-xs shadow-xs cursor-pointer"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>Send via WhatsApp Now</span>
+                  <span>{formT.sendWhatsAppOption}</span>
                 </button>
                 <button
                   onClick={() => setIsSuccess(false)}

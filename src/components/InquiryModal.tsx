@@ -110,8 +110,8 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
 
   const handleWhatsAppSend = () => {
     const text = lang === 'en'
-      ? `Hello RIFORA! My name is ${customerName}. I am inquiring about ${quantity}x "${productName}" (Ref: ${currentProduct?.id || 'general'}, ~€${currentProduct?.priceEUR || 0}) for delivery to ${finalCountry}. My email is ${email}. Notes: ${notes || 'None'}`
-      : `Bonjour RIFORA ! Je m'appelle ${customerName}. Je me renseigne sur ${quantity}x "${productName}" (Réf : ${currentProduct?.id || 'general'}, ~€${currentProduct?.priceEUR || 0}) pour une livraison en ${finalCountry}. Mon email est ${email}. Précisions : ${notes || 'Aucune'}`;
+      ? `Hello RIFORA! My name is ${customerName}. I would like to inquire about reserving ${quantity}x "${productName}" (Ref: ${currentProduct?.id || 'general'}, ~€${currentProduct?.priceEUR || 0}) for delivery to ${finalCountry}. My email is ${email}.${phone ? ` Phone: ${phone}.` : ''}${notes ? ` Notes: ${notes}` : ''} Could you please confirm piece availability and shipping options? Thank you!`
+      : `Bonjour RIFORA ! Je m'appelle ${customerName}. Je souhaite me renseigner pour réserver ${quantity}x "${productName}" (Réf : ${currentProduct?.id || 'general'}, ~€${currentProduct?.priceEUR || 0}) pour une livraison en ${finalCountry}. Mon email est ${email}.${phone ? ` Téléphone : ${phone}.` : ''}${notes ? ` Précisions : ${notes}` : ''} Pourriez-vous me confirmer la disponibilité et les options de livraison ? Merci !`;
     const url = generateWhatsAppLink(settings.whatsappNumber, text);
     window.open(url, '_blank', 'noopener,noreferrer');
   };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Language, PageView } from '../types';
 import { translations } from '../data/translations';
-import { Wrench, MessageCircle } from 'lucide-react';
+import { Wrench, MessageCircle, Mail } from 'lucide-react';
 import { generateWhatsAppLink, getStoredOwnerSettings } from '../services/storage';
 
 interface FooterProps {
@@ -40,14 +40,27 @@ export const Footer: React.FC<FooterProps> = ({ lang, setLang, setCurrentView })
             <p className="text-xs text-[#A89E92] leading-relaxed">
               {t.brandDesc}
             </p>
-            <div className="pt-2">
-              <button
-                onClick={handleWhatsApp}
-                className="inline-flex items-center gap-2 text-xs font-medium text-[#25D366] hover:text-[#42E67F] transition-colors cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>WhatsApp: {settings.whatsappNumber}</span>
-              </button>
+            <div className="pt-2 space-y-2">
+              <div>
+                <button
+                  onClick={handleWhatsApp}
+                  className="inline-flex items-center gap-2 text-xs font-medium text-[#25D366] hover:text-[#42E67F] transition-colors cursor-pointer"
+                  aria-label={`WhatsApp: ${settings.whatsappNumber}`}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>WhatsApp: {settings.whatsappNumber}</span>
+                </button>
+              </div>
+              <div>
+                <a
+                  href={`mailto:${settings.contactEmail}`}
+                  className="inline-flex items-center gap-2 text-xs text-[#D1C6B7] hover:text-white transition-colors cursor-pointer"
+                  aria-label={`Email: ${settings.contactEmail}`}
+                >
+                  <Mail className="w-4 h-4 text-[#C06548]" />
+                  <span>{settings.contactEmail}</span>
+                </a>
+              </div>
             </div>
           </div>
 
