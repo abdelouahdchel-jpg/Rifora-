@@ -1,7 +1,7 @@
 import React from 'react';
 import { Language, PageView } from '../types';
 import { translations } from '../data/translations';
-import { Wrench, MessageCircle, Mail } from 'lucide-react';
+import { Lock, MessageCircle, Mail } from 'lucide-react';
 import { generateWhatsAppLink, getStoredOwnerSettings } from '../services/storage';
 
 interface FooterProps {
@@ -116,7 +116,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, setLang, setCurrentView })
               </li>
               <li>
                 <button onClick={() => handleNav('owner')} className="inline-flex items-center gap-1.5 text-[#C06548] hover:text-[#D97D61] transition-colors cursor-pointer pt-1 text-[11px]">
-                  <Wrench className="w-3.5 h-3.5" />
+                  <Lock className="w-3.5 h-3.5" />
                   <span>{t.ownerLink}</span>
                 </button>
               </li>

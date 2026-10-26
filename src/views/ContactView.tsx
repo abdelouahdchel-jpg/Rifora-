@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Product, Language } from '../types';
 import { translations, EUROPEAN_COUNTRIES } from '../data/translations';
 import { generateWhatsAppLink, getStoredOwnerSettings, addInquiryToStorage, isValidEmail } from '../services/storage';
+import { submitCustomerInquiry } from '../services/api';
 import { MessageCircle, Mail, MapPin, Clock, Database, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface ContactViewProps {
@@ -32,7 +33,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ products, lang }) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSaveError(null);
@@ -58,7 +59,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ products, lang }) => {
       const selectedProd = products.find(p => p.id === selectedProductId);
       const prodName = selectedProd ? selectedProd.name[lang] : (lang === 'en' ? 'General Inquiry' : 'Demande générale');
 
-      const result = addInquiryToStorage({
+      const payload = {
         customerName: trimmedName,
         email: trimmedEmail,
         phone: phone.trim() || undefined,
@@ -67,11 +68,13 @@ export const ContactView: React.FC<ContactViewProps> = ({ products, lang }) => {
         productName: prodName,
         quantity,
         notes: notes.trim() || undefined
-      });
+      };
 
-      if (!result.success) {
-        // Never claim success when failed
-        setSaveError(result.error || formT.saveErrorMessage);
+      const serverRes = await submitCustomerInquiry(payload);
+      const localRes = addInquiryToStorage(payload);
+
+      if (!serverRes.success && !localRes.success) {
+        setSaveError(serverRes.error || localRes.error || formT.saveErrorMessage);
         setIsSuccess(false);
       } else {
         setIsSuccess(true);

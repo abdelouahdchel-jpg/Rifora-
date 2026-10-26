@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Product, Language, Inquiry } from '../types';
 import { translations, EUROPEAN_COUNTRIES } from '../data/translations';
 import { addInquiryToStorage, generateWhatsAppLink, getStoredOwnerSettings, isValidEmail } from '../services/storage';
+import { submitCustomerInquiry } from '../services/api';
 import { X, CheckCircle, MessageCircle, AlertTriangle, ShieldAlert, Mail, Send, ExternalLink } from 'lucide-react';
 
 interface InquiryModalProps {
@@ -46,7 +47,7 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
   const productName = currentProduct ? currentProduct.name[lang] : (lang === 'en' ? 'General Collection Inquiry' : 'Demande générale sur la collection');
   const finalCountry = destinationCountry === 'Other European Destination' && customCountry.trim() ? customCountry.trim() : destinationCountry;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSaveError(null);
@@ -74,7 +75,7 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const result = addInquiryToStorage({
+      const payload = {
         customerName: trimmedName,
         email: trimmedEmail,
         phone: phone.trim() || undefined,
@@ -83,20 +84,32 @@ export const InquiryModal: React.FC<InquiryModalProps> = ({
         productName: productName,
         quantity: Number(quantity),
         notes: notes.trim() || undefined
-      });
+      };
 
-      if (!result.success || !result.inquiry) {
-        // NEVER show fake success if storage fails
-        setSaveError(result.error || t.saveErrorMessage);
+      // Try server API first
+      let createdInq: Inquiry | null = null;
+      const serverRes = await submitCustomerInquiry(payload);
+      if (serverRes.success && serverRes.inquiry) {
+        createdInq = serverRes.inquiry;
+      }
+
+      // Also record in local storage as backup
+      const localRes = addInquiryToStorage(payload);
+      if (!createdInq && localRes.success && localRes.inquiry) {
+        createdInq = localRes.inquiry;
+      }
+
+      if (!createdInq) {
+        setSaveError(serverRes.error || localRes.error || t.saveErrorMessage);
         setIsSuccess(false);
         setIsSubmitting(false);
         return;
       }
 
-      setCreatedInquiry(result.inquiry);
+      setCreatedInquiry(createdInq);
       setIsSuccess(true);
       if (onInquiryAdded) {
-        onInquiryAdded(result.inquiry);
+        onInquiryAdded(createdInq);
       }
     } catch (err: any) {
       console.error('Storage write error', err);

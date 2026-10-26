@@ -247,7 +247,7 @@ export const translations = {
       destinations: 'Serving Europe (Pilot)',
       europeanCountries: 'France · Germany · Belgium · Spain · Italy · Netherlands · Switzerland · UK',
       pilotDisclaimer: 'RIFORA is currently in a customer interest validation phase. No online payments collected. Inquiries are non-binding.',
-      ownerLink: 'Store Manager & Catalog Tool (Local Dev)'
+      ownerLink: 'Owner Portal (/admin)'
     }
   },
   fr: {
@@ -498,7 +498,7 @@ export const translations = {
       destinations: 'Destinations Europe (Pilote)',
       europeanCountries: 'France · Allemagne · Belgique · Espagne · Italie · Pays-Bas · Suisse · Royaume-Uni',
       pilotDisclaimer: 'RIFORA est actuellement en phase pilote de validation. Aucun paiement en ligne n’est prélevé. Demandes sans engagement.',
-      ownerLink: 'Outil Gérant & Catalogue (Dev Local)'
+      ownerLink: 'Espace Propriétaire (/admin)'
     }
   }
 };

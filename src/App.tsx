@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Product, Language, PageView, Inquiry } from './types';
+import { fetchPublicProducts, getAuthStatus, logoutOwner, AuthStatusResponse } from './services/api';
 import { getStoredProducts } from './services/storage';
 import { Header } from './components/Header';
 import { PilotBanner } from './components/PilotBanner';
@@ -21,12 +22,30 @@ import { ContactView } from './views/ContactView';
 import { PrivacyView } from './views/PrivacyView';
 import { TermsView } from './views/TermsView';
 import { OwnerView } from './views/OwnerView';
+import { AdminLoginView } from './views/AdminLoginView';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
-  const [currentView, setCurrentView] = useState<PageView>('home');
+  const [currentView, setCurrentView] = useState<PageView>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/admin' || hash === '#admin') return 'owner';
+    }
+    return 'home';
+  });
   const [products, setProducts] = useState<Product[]>([]);
   
+  // Real Server-Side Owner Authentication State
+  const [authStatus, setAuthStatus] = useState<AuthStatusResponse>({
+    initialized: false,
+    isAuthenticated: false,
+    ownerEmail: 'abdelouahdchel@gmail.com',
+    currentUser: null,
+    requiresSetupSecret: false
+  });
+  const [authChecked, setAuthChecked] = useState(false);
+
   // Modals state
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedProductForInquiry, setSelectedProductForInquiry] = useState<Product | null>(null);
@@ -34,9 +53,73 @@ export default function App() {
 
   // Initialize data on mount
   useEffect(() => {
-    const loadedProducts = getStoredProducts();
-    setProducts(loadedProducts);
+    async function initApp() {
+      // 1. Fetch public products from backend (without purchaseCostMAD)
+      try {
+        const serverProducts = await fetchPublicProducts();
+        setProducts(serverProducts);
+      } catch {
+        setProducts(getStoredProducts());
+      }
+
+      // 2. Check server-side auth status
+      try {
+        const status = await getAuthStatus();
+        setAuthStatus(status);
+      } catch (err) {
+        console.error('Failed to verify session with backend:', err);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+
+    initApp();
+
+    // Listen to browser navigation popstate
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/admin' || hash === '#admin') {
+        setCurrentView('owner');
+      } else if (path === '/' || path === '') {
+        setCurrentView('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  const handleNavigate = (view: PageView) => {
+    setCurrentView(view);
+    if (typeof window !== 'undefined') {
+      if (view === 'owner') {
+        window.history.pushState(null, '', '/admin');
+      } else if (window.location.pathname === '/admin') {
+        window.history.pushState(null, '', '/');
+      }
+    }
+  };
+
+  const handleLoginSuccess = (email: string) => {
+    setAuthStatus(prev => ({
+      ...prev,
+      initialized: true,
+      isAuthenticated: true,
+      currentUser: email
+    }));
+    setCurrentView('owner');
+  };
+
+  const handleLogout = async () => {
+    await logoutOwner();
+    setAuthStatus(prev => ({
+      ...prev,
+      isAuthenticated: false,
+      currentUser: null
+    }));
+    handleNavigate('home');
+  };
 
   const handleOpenGeneralInquiry = () => {
     setSelectedProductForInquiry(null);
@@ -49,7 +132,7 @@ export default function App() {
   };
 
   const handleInquiryAdded = (_newInquiry: Inquiry) => {
-    // Inquiry recorded in local storage
+    // Inquiry recorded
   };
 
   const handleProductsUpdated = (updated: Product[]) => {
@@ -62,7 +145,7 @@ export default function App() {
       <PilotBanner
         lang={lang}
         onLearnMore={() => {
-          setCurrentView('about');
+          handleNavigate('about');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
@@ -70,7 +153,7 @@ export default function App() {
       {/* 2. Top Bar Navigation (Strict 3-Zone Contract) */}
       <Header
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={handleNavigate}
         lang={lang}
         setLang={setLang}
         onOpenInquiry={handleOpenGeneralInquiry}
@@ -82,7 +165,7 @@ export default function App() {
           <HomeView
             products={products}
             lang={lang}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigate}
             onSelectProduct={(p) => setSelectedProductForDetail(p)}
             onInquireProduct={handleOpenProductInquiry}
           />
@@ -117,12 +200,30 @@ export default function App() {
           <TermsView lang={lang} />
         )}
 
+        {/* Dedicated /admin route: Protected by server authentication */}
         {currentView === 'owner' && (
-          <OwnerView
-            products={products}
-            lang={lang}
-            onProductsUpdated={handleProductsUpdated}
-          />
+          authStatus.isAuthenticated ? (
+            <OwnerView
+              products={products}
+              lang={lang}
+              onProductsUpdated={handleProductsUpdated}
+              currentUserEmail={authStatus.currentUser || authStatus.ownerEmail}
+              databaseType={authStatus.databaseType}
+              databaseProvider={authStatus.databaseProvider}
+              blobStorageConfigured={authStatus.blobStorageConfigured}
+              onLogout={handleLogout}
+              onBackToStore={() => handleNavigate('home')}
+            />
+          ) : (
+            <AdminLoginView
+              lang={lang}
+              isInitialized={authStatus.initialized}
+              defaultEmail={authStatus.ownerEmail}
+              requiresSetupSecret={authStatus.requiresSetupSecret}
+              onSuccess={handleLoginSuccess}
+              onBackToStore={() => handleNavigate('home')}
+            />
+          )
         )}
       </main>
 
@@ -154,7 +255,7 @@ export default function App() {
       <Footer
         lang={lang}
         setLang={setLang}
-        setCurrentView={setCurrentView}
+        setCurrentView={handleNavigate}
       />
     </div>
   );

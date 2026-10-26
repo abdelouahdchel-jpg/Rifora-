@@ -2,24 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Product, Language, Inquiry, OwnerSettings, StorePolicies } from '../types';
 import { translations } from '../data/translations';
 import {
-  getStoredInquiries,
-  updateInquiryStatusInStorage,
-  clearStoredInquiries,
-  saveProductToStorage,
-  deleteProductFromStorage,
-  resetProductsToDefault,
   exportInquiriesToCSV,
   exportFullDatabaseJSON,
-  getStoredOwnerSettings,
-  saveStoredOwnerSettings,
-  getStoredPolicies,
-  saveStoredPolicies,
-  resetStoredPolicies,
   compressImage,
-  sanitizeString
+  sanitizeString,
+  DEFAULT_POLICIES
 } from '../services/storage';
 import {
-  AlertTriangle,
+  fetchAdminProducts,
+  saveAdminProduct,
+  deleteAdminProduct,
+  resetAdminProducts,
+  uploadAdminImage,
+  fetchAdminInquiries,
+  updateAdminInquiryStatus,
+  clearAdminInquiries,
+  fetchStoreSettings,
+  saveAdminSettings,
+  fetchStorePolicies,
+  saveAdminPolicies
+} from '../services/api';
+import {
+  ShieldCheck,
   Plus,
   Pencil,
   Trash2,
@@ -37,29 +41,43 @@ import {
   FileText,
   Sliders,
   Eye,
-  CheckSquare
+  CheckSquare,
+  LogOut,
+  ArrowLeft
 } from 'lucide-react';
 
 interface OwnerViewProps {
   products: Product[];
   lang: Language;
   onProductsUpdated: (updated: Product[]) => void;
+  currentUserEmail?: string;
+  databaseType?: 'postgres' | 'local_file';
+  databaseProvider?: string;
+  blobStorageConfigured?: boolean;
+  onLogout?: () => void;
+  onBackToStore?: () => void;
 }
 
 export const OwnerView: React.FC<OwnerViewProps> = ({
   products,
   lang,
-  onProductsUpdated
+  onProductsUpdated,
+  currentUserEmail = 'abdelouahdchel@gmail.com',
+  databaseType,
+  databaseProvider,
+  blobStorageConfigured,
+  onLogout,
+  onBackToStore
 }) => {
-  // Security & Mode State: Explicit dev environment acknowledgment, NO fake hardcoded passwords
-  const [hasAcknowledgedDevMode, setHasAcknowledgedDevMode] = useState<boolean>(() => {
-    return sessionStorage.getItem('rifora_dev_acknowledged') === 'true';
-  });
-
   const [activeTab, setActiveTab] = useState<'products' | 'inquiries' | 'policies' | 'settings'>('products');
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [settings, setSettings] = useState<OwnerSettings>(getStoredOwnerSettings());
-  const [policies, setPolicies] = useState<StorePolicies>(getStoredPolicies());
+  const [settings, setSettings] = useState<OwnerSettings>({
+    whatsappNumber: '+212638194995',
+    contactEmail: 'abdelouahdchel@gmail.com',
+    storeCurrency: 'MAD'
+  });
+  const [policies, setPolicies] = useState<StorePolicies>(DEFAULT_POLICIES);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Product Editing / Creation State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -94,30 +112,65 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
 
   const t = translations[lang].owner;
 
+  // Fetch verified backend data on mount
   useEffect(() => {
-    if (hasAcknowledgedDevMode) {
-      setInquiries(getStoredInquiries());
-      setSettings(getStoredOwnerSettings());
-      setPolicies(getStoredPolicies());
+    let isMounted = true;
+    async function loadBackendData() {
+      setIsLoading(true);
+      try {
+        const [prodRes, inqRes, settRes, polRes] = await Promise.all([
+          fetchAdminProducts(),
+          fetchAdminInquiries(),
+          fetchStoreSettings(),
+          fetchStorePolicies()
+        ]);
+
+        if (!isMounted) return;
+
+        if (prodRes.success && prodRes.products) {
+          onProductsUpdated(prodRes.products);
+        }
+        if (inqRes.success && inqRes.inquiries) {
+          setInquiries(inqRes.inquiries);
+        }
+        if (settRes) {
+          setSettings(settRes);
+        }
+        if (polRes) {
+          setPolicies(polRes);
+        }
+      } catch (err: any) {
+        console.error('Error loading admin backend data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
     }
-  }, [hasAcknowledgedDevMode]);
 
-  const handleAcknowledge = () => {
-    sessionStorage.setItem('rifora_dev_acknowledged', 'true');
-    setHasAcknowledgedDevMode(true);
+    loadBackendData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleStatusChange = async (id: string, newStatus: 'new' | 'contacted' | 'completed') => {
+    try {
+      const res = await updateAdminInquiryStatus(id, newStatus);
+      if (res.success && res.inquiries) {
+        setInquiries(res.inquiries);
+      }
+    } catch {
+      setErrorMessage(lang === 'en' ? 'Failed to update status on server.' : 'Échec de la mise à jour du statut.');
+    }
   };
 
-  const handleStatusChange = (id: string, newStatus: 'new' | 'contacted' | 'completed') => {
-    const updated = updateInquiryStatusInStorage(id, newStatus);
-    setInquiries(updated);
-  };
-
-  const handleClearInquiries = () => {
-    if (window.confirm(lang === 'en' ? 'Clear all test inquiries recorded on this browser?' : 'Supprimer toutes les demandes de test sur ce navigateur ?')) {
-      clearStoredInquiries();
-      setInquiries([]);
-      setFeedbackNotice(lang === 'en' ? 'Test inquiries cleared.' : 'Demandes de test effacées.');
-      setTimeout(() => setFeedbackNotice(''), 3000);
+  const handleClearInquiries = async () => {
+    if (window.confirm(lang === 'en' ? 'Clear all inquiries stored on the server?' : 'Supprimer toutes les demandes enregistrées sur le serveur ?')) {
+      const res = await clearAdminInquiries();
+      if (res.success) {
+        setInquiries([]);
+        setFeedbackNotice(lang === 'en' ? 'Inquiries cleared on server.' : 'Demandes effacées sur le serveur.');
+        setTimeout(() => setFeedbackNotice(''), 3000);
+      }
     }
   };
 
@@ -171,7 +224,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
     setQuickShippingMAD(prod.shippingCostMAD != null && prod.shippingCostMAD > 0 ? prod.shippingCostMAD.toString() : '');
   };
 
-  const handleSaveQuickPrice = (e: React.FormEvent) => {
+  const handleSaveQuickPrice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickPriceProduct) return;
 
@@ -186,11 +239,14 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
       shippingCostMAD: parsedShipping
     };
 
-    const result = saveProductToStorage(updatedProduct);
-    if (result.success) {
+    setIsLoading(true);
+    const result = await saveAdminProduct(updatedProduct);
+    setIsLoading(false);
+
+    if (result.success && result.products) {
       onProductsUpdated(result.products);
       setQuickPriceProduct(null);
-      setFeedbackNotice(lang === 'en' ? 'Product prices updated successfully!' : 'Prix mis à jour avec succès !');
+      setFeedbackNotice(lang === 'en' ? 'Product prices saved persistently on server!' : 'Prix enregistrés de manière persistante sur le serveur !');
       setTimeout(() => setFeedbackNotice(''), 3000);
     } else {
       setErrorMessage(result.error || 'Failed to save price.');
@@ -203,13 +259,19 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
       setIsUploadingImage(true);
       setErrorMessage('');
       try {
-        // Compress image client-side to ensure it safely fits in localStorage without hitting quota
-        const compressedBase64 = await compressImage(file, 800, 800, 0.75);
-        setFormImageUrl(compressedBase64);
-        setFeedbackNotice(lang === 'en' ? 'Photo compressed and ready to save.' : 'Photo compressée et prête à être enregistrée.');
+        const compressedBase64 = await compressImage(file, 900, 900, 0.8);
+        const uploadRes = await uploadAdminImage(compressedBase64, file.name);
+        if (uploadRes.success && uploadRes.url) {
+          setFormImageUrl(uploadRes.url);
+          setFeedbackNotice(lang === 'en' ? 'Photo uploaded to server successfully!' : 'Photo téléversée sur le serveur avec succès !');
+        } else {
+          // Fall back to compressed base64 if server upload endpoint fallback
+          setFormImageUrl(compressedBase64);
+          setFeedbackNotice(lang === 'en' ? 'Photo compressed and ready to save.' : 'Photo prête à être enregistrée.');
+        }
         setTimeout(() => setFeedbackNotice(''), 3000);
       } catch (err: any) {
-        console.error('Image compression error', err);
+        console.error('Image upload error', err);
         setErrorMessage(lang === 'en' ? 'Could not process image file.' : 'Impossible de traiter le fichier image.');
       } finally {
         setIsUploadingImage(false);
@@ -217,7 +279,7 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
     }
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -269,113 +331,101 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
       featured: editingProduct ? editingProduct.featured : false
     };
 
-    const result = saveProductToStorage(productToSave);
-    if (!result.success) {
-      setErrorMessage(result.error || 'Failed to save product to storage.');
+    setIsLoading(true);
+    const result = await saveAdminProduct(productToSave);
+    setIsLoading(false);
+
+    if (!result.success || !result.products) {
+      setErrorMessage(result.error || 'Failed to save product to server.');
       return;
     }
 
     onProductsUpdated(result.products);
     setEditingProduct(null);
     setIsAddingNew(false);
-    setFeedbackNotice(lang === 'en' ? 'Product saved successfully! Persisted on this device.' : 'Produit enregistré avec succès sur cet appareil !');
+    setFeedbackNotice(lang === 'en' ? 'Product saved persistently on server!' : 'Produit enregistré de manière persistante sur le serveur !');
     setTimeout(() => setFeedbackNotice(''), 3000);
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    if (window.confirm(lang === 'en' ? 'Delete this product from catalog?' : 'Supprimer ce produit du catalogue ?')) {
-      const updatedCatalog = deleteProductFromStorage(productId);
-      onProductsUpdated(updatedCatalog);
-      setFeedbackNotice(lang === 'en' ? 'Product removed.' : 'Produit supprimé.');
-      setTimeout(() => setFeedbackNotice(''), 3000);
+  const handleDeleteProduct = async (productId: string) => {
+    if (window.confirm(lang === 'en' ? 'Delete this product permanently from the server catalog?' : 'Supprimer définitivement ce produit du catalogue serveur ?')) {
+      setIsLoading(true);
+      const res = await deleteAdminProduct(productId);
+      setIsLoading(false);
+      if (res.success && res.products) {
+        onProductsUpdated(res.products);
+        setFeedbackNotice(lang === 'en' ? 'Product deleted from server.' : 'Produit supprimé du serveur.');
+        setTimeout(() => setFeedbackNotice(''), 3000);
+      } else {
+        setErrorMessage(res.error || 'Failed to delete product.');
+      }
     }
   };
 
-  const handleResetCatalog = () => {
-    if (window.confirm(lang === 'en' ? 'Reset catalog to default sample pieces?' : 'Réinitialiser le catalogue aux échantillons par défaut ?')) {
-      const defaultCatalog = resetProductsToDefault();
-      onProductsUpdated(defaultCatalog);
-      setFeedbackNotice(lang === 'en' ? 'Catalog restored to sample defaults.' : 'Catalogue restauré aux échantillons.');
-      setTimeout(() => setFeedbackNotice(''), 3000);
+  const handleResetCatalog = async () => {
+    if (window.confirm(lang === 'en' ? 'Reset catalog to the 10 real workshop pieces with empty prices?' : 'Réinitialiser le catalogue aux 10 pièces réelles d’atelier avec prix à renseigner ?')) {
+      setIsLoading(true);
+      const res = await resetAdminProducts();
+      setIsLoading(false);
+      if (res.success && res.products) {
+        onProductsUpdated(res.products);
+        setFeedbackNotice(lang === 'en' ? 'Catalog restored to 10 workshop items.' : 'Catalogue restauré aux 10 pièces d’atelier.');
+        setTimeout(() => setFeedbackNotice(''), 3000);
+      }
     }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveStoredOwnerSettings(settings);
-    setFeedbackNotice(lang === 'en' ? 'WhatsApp & Store settings saved!' : 'Paramètres WhatsApp et boutique enregistrés !');
-    setTimeout(() => setFeedbackNotice(''), 3000);
+    setIsLoading(true);
+    const res = await saveAdminSettings(settings);
+    setIsLoading(false);
+    if (res.success) {
+      setFeedbackNotice(lang === 'en' ? 'WhatsApp & Store settings saved to server!' : 'Paramètres WhatsApp et boutique enregistrés sur le serveur !');
+      setTimeout(() => setFeedbackNotice(''), 3000);
+    } else {
+      setErrorMessage(res.error || 'Failed to save settings.');
+    }
   };
 
-  const handleSavePolicies = (e: React.FormEvent) => {
+  const handleSavePolicies = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveStoredPolicies(policies);
-    setFeedbackNotice(lang === 'en' ? 'Store policies and legal texts updated and saved!' : 'Textes et politiques de la boutique mis à jour !');
-    setTimeout(() => setFeedbackNotice(''), 3000);
+    setIsLoading(true);
+    const res = await saveAdminPolicies(policies);
+    setIsLoading(false);
+    if (res.success) {
+      setFeedbackNotice(lang === 'en' ? 'Store policies saved to server!' : 'Politiques enregistrées sur le serveur !');
+      setTimeout(() => setFeedbackNotice(''), 3000);
+    } else {
+      setErrorMessage(res.error || 'Failed to save policies.');
+    }
   };
 
   const handleResetPolicies = () => {
     if (window.confirm(lang === 'en' ? 'Reset all store policies to default texts?' : 'Réinitialiser toutes les politiques aux textes par défaut ?')) {
-      const def = resetStoredPolicies();
-      setPolicies(def);
+      setPolicies(DEFAULT_POLICIES);
+      saveAdminPolicies(DEFAULT_POLICIES);
       setFeedbackNotice(lang === 'en' ? 'Policies reset to defaults.' : 'Politiques réinitialisées.');
       setTimeout(() => setFeedbackNotice(''), 3000);
     }
   };
 
-  // If Dev Mode Not Yet Acknowledged: Transparent Environment Disclosure
-  if (!hasAcknowledgedDevMode) {
-    return (
-      <div className="max-w-xl mx-auto px-4 py-16">
-        <div className="bg-white border border-[#DDD2C1] rounded-xs p-8 shadow-sm space-y-6">
-          <div className="w-12 h-12 mx-auto rounded-full bg-[#FFFBEB] flex items-center justify-center text-[#B45309]">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-
-          <div className="text-center space-y-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#C06548] block">
-              Development & Local Manager Tool
-            </span>
-            <h1 className="font-serif text-2xl text-[#282421]">
-              {t.devNoticeTitle}
-            </h1>
-            <p className="text-xs text-[#6E6358] leading-relaxed text-left">
-              {t.devNoticeText}
-            </p>
-          </div>
-
-          <div className="p-4 bg-[#F7F2EA] border border-[#DDD2C1] rounded-xs text-xs text-[#524B44] space-y-2 text-left">
-            <span className="font-semibold text-[#282421] block">Architectural Status:</span>
-            <ul className="space-y-1.5 list-disc list-inside text-[11px] text-[#6E6358]">
-              <li><strong>Local Storage Only:</strong> Products, inquiries, and policies are stored in your current browser session.</li>
-              <li><strong>No Secret in Client Code:</strong> No hardcoded passwords exist in JavaScript.</li>
-              <li><strong>Production Requirement:</strong> To receive inquiries from remote European customers and protect administrative actions, configure a server API with backend authentication.</li>
-            </ul>
-          </div>
-
-          <button
-            onClick={handleAcknowledge}
-            className="w-full py-3 px-4 text-xs font-semibold tracking-wider uppercase text-white bg-[#C06548] hover:bg-[#9E4A31] transition-colors rounded-xs cursor-pointer shadow-xs"
-          >
-            I Understand — Open Local Dev Tool
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#E8DFD3] pb-6">
+      {/* Authenticated Owner Top Bar */}
+      <div className="bg-white border border-[#E8DFD3] rounded-sm p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#FFFBEB] text-[#92400E] px-2 py-0.5 border border-[#FDE68A] rounded-xs">
-              Local Dev & Testing Mode
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-800 px-2.5 py-1 border border-emerald-200 rounded-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Server-Verified Owner Session</span>
+            </span>
+            <span className="text-xs text-[#7A7067]">
+              Signed in as <strong className="text-[#282421]">{currentUserEmail}</strong>
             </span>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl text-[#282421]">
+          <h1 className="font-serif text-2xl text-[#282421]">
             {t.title}
           </h1>
           <p className="text-xs text-[#7A7067] mt-0.5">
@@ -383,25 +433,59 @@ export const OwnerView: React.FC<OwnerViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              sessionStorage.removeItem('rifora_dev_acknowledged');
-              setHasAcknowledgedDevMode(false);
-            }}
-            className="px-3 py-1.5 text-xs text-[#7A7067] hover:text-[#282421] border border-[#DDD2C1] hover:bg-white rounded-xs transition-colors cursor-pointer"
-          >
-            Exit Manager Mode
-          </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {onBackToStore && (
+            <button
+              onClick={onBackToStore}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#57534E] hover:text-[#282421] border border-[#DDD2C1] hover:bg-[#FBF8F3] rounded-xs transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{lang === 'en' ? 'Storefront' : 'Boutique'}</span>
+            </button>
+          )}
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs text-red-700 hover:text-red-800 border border-red-200 hover:bg-red-50 rounded-xs transition-colors cursor-pointer font-medium"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{lang === 'en' ? 'Sign Out' : 'Déconnexion'}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Security Warning Strip */}
-      <div className="p-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xs text-xs flex items-center gap-2 text-[#92400E]">
-        <AlertTriangle className="w-4 h-4 shrink-0 text-[#D97706]" />
-        <span>
-          <strong>Local Device Scoped:</strong> Inquiries submitted on other visitors' browsers in Europe are not saved here. An authenticated server database is required for shared production storage.
-        </span>
+      {/* Persistence confirmation banner */}
+      <div className="p-3.5 bg-[#FBF8F3] border border-[#E8DFD3] rounded-xs text-xs space-y-2 text-[#57534E]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 shrink-0 text-[#C06548]" />
+            <span>
+              <strong>Vercel Serverless Architecture:</strong> Stateless HMAC authentication & server-enforced private pricing.
+            </span>
+          </div>
+          {isLoading && (
+            <span className="text-[11px] text-[#C06548] animate-pulse font-medium">Syncing backend...</span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#E8DFD3] text-[11px]">
+          <span className="text-[#7A7067]">Active Storage Engine:</span>
+          <span className={`px-2 py-0.5 rounded-xs font-medium ${
+            databaseType === 'postgres'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-amber-50 text-amber-800 border border-amber-200'
+          }`}>
+            {databaseType === 'postgres' ? `Database: ${databaseProvider || 'Vercel Postgres (Connected)'}` : 'Database: Local Dev Store (Add POSTGRES_URL in Vercel for production)'}
+          </span>
+          <span className={`px-2 py-0.5 rounded-xs font-medium ${
+            blobStorageConfigured
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-stone-100 text-stone-700 border border-stone-200'
+          }`}>
+            {blobStorageConfigured ? 'Media: Vercel Blob (CDN Active)' : 'Media: Local / Inline (Add BLOB_READ_WRITE_TOKEN in Vercel)'}
+          </span>
+        </div>
       </div>
 
       {feedbackNotice && (
